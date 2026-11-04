@@ -6,12 +6,28 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:$CDB1234r}
     driver-class-name: com.mysql.cj.jdbc.Driver
+##########################################################################
+    hikari: #OBSERVAÇÃO IMPORTANTE AQUI ESTAMOS FALANDO DE POOL DE CONEXÕES COM O BANCO DE DADOS E NÃO O POLL DE REQUESTS HTTP
+#      POR PADRÃO NO SPRING HIKARICP
+
+#     Número máximo de conexões físicas que o pool pode abrir simultaneamente com o banco de dados
+#     Se todas essas conexões estiverem ocupadas atendendo a requisições, nenhuma nova conexão será criada
+      maximum-pool-size: 20
+
+#     Define a quantidade mínima de conexões ociosas (livres e prontas para uso)
+#     que o pool tentará manter ativas no banco de dados
+      minimum-idle: 10
+##########################################################################
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
   kafka:
     bootstrap-servers: "http://localhost:29092"
+
+  threads:
+    virtual:
+      enabled: true
 
 server:
   port: 8082
