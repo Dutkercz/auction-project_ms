@@ -1,6 +1,7 @@
 package com.db.ar.cristian.auction_ms.service;
 
 import com.db.ar.cristian.auction_ms.dto.BidResponse;
+import com.db.ar.cristian.auction_ms.dto.BidUpdateDto;
 import com.db.ar.cristian.auction_ms.dto.CreateBidRequest;
 import com.db.ar.cristian.auction_ms.exception.AuctionConflictException;
 import com.db.ar.cristian.auction_ms.exception.AuctionUnexpectedException;
@@ -17,6 +18,7 @@ import com.db.ar.cristian.auction_ms.repository.BidRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ public class BidService {
     private final BidMapper bidMapper;
     private final FeignUserClient feignUserClient;
     private final AuctionProducer auctionProducer;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public BidResponse placeBid(Long auctionId, CreateBidRequest request) {
@@ -76,6 +79,9 @@ public class BidService {
 
             //envia evento de novo bid aos consumidores
             auctionProducer.newAuctionBid(response);
+            //envia evento de dominio/aplicação... ainda não esta chamando o websocket
+            eventPublisher.publishEvent(new BidUpdateDto(auction.getId(), auction.getActualBid()));
+
             return response;
 
         }catch (FeignException.NotFound e){
