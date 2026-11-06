@@ -15,6 +15,7 @@ import com.db.ar.cristian.auction_ms.model.AuctionStatus;
 import com.db.ar.cristian.auction_ms.model.Bid;
 import com.db.ar.cristian.auction_ms.repository.AuctionRepository;
 import com.db.ar.cristian.auction_ms.repository.BidRepository;
+import com.db.ar.cristian.auction_ms.service.validation.AuctionBidValidation;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class BidService {
     private final FeignUserClient feignUserClient;
     private final AuctionProducer auctionProducer;
     private final ApplicationEventPublisher eventPublisher;
+    private final List<AuctionBidValidation> validations;
 
     @Transactional
     public BidResponse placeBid(Long auctionId, CreateBidRequest request) {
@@ -44,48 +46,33 @@ public class BidService {
                 () -> new AuctionUnexpectedException("Leilão não encontrado com id: " + auctionId));
         Instant now = Instant.now();
         Utils.refreshStatus(auction, now);
-        if (auction.getStatus() != AuctionStatus.OPEN) {
-            throw new AuctionConflictException("O leilão não está aberto para lances.");
-        }
-        if (auction.getSellerId().equals(request.bidderId())) {
-            throw new BidUnexpectedException("O vendedor não pode dar lances no próprio leilão.");
-        }
-        if (request.amount().compareTo(auction.getMinimumBid()) < 0 ||
-           (auction.getActualBid() != null && request.amount().compareTo(auction.getActualBid()) <= 0)) {
-            throw new BidUnexpectedException("O lance deve ser maior que o atual."
-            );
-        }
-        if (!auction.getBids().isEmpty() &&
-            Objects.equals(request.bidderId(), auction.getBids().getLast().getBidderId())){
-            throw new BidUnexpectedException("O lance atual já pertence a este usuário");
-        }
 
-        //todo: verificar via feign cadastro de usuario e se ele possui "limite" para o lance
+        validations.forEach(val -> val.validateAuctionBid(auction, request));
+
         try {
-            var userRep = feignUserClient.getUser(request.bidderId());
+            var userRep = feignUserClient.getUser(request.bidderId()).orElseThrow(() ->
+                                 new UnexpectedFeignException("Usuário não encontrado, lance não registrado!"));
 
-            if (userRep == null){
-                throw new UnexpectedFeignException("Usuário não encontrado, lance não registrado!");
-            }
             if (request.amount().compareTo(userRep.accountLimit()) > 0){
                 throw new BidUnexpectedException("Usuário não possui limite para o lance");
             }
 
             Bid bid = bidMapper.toEntity(request, auction, now);
-            auction.setActualBid(request.amount());
+            auction.setActualBid(bid.getAmount());
             auction.addBid(bid);
             bid = bidRepository.save(bid);
             BidResponse response = bidMapper.toResponse(bid);
 
             //envia evento de novo bid aos consumidores
             auctionProducer.newAuctionBid(response);
+
             //envia evento de dominio/aplicação... ainda não esta chamando o websocket
             eventPublisher.publishEvent(new BidUpdateDto(auction.getId(), auction.getActualBid()));
 
             return response;
 
         }catch (FeignException.NotFound e){
-            throw new UnexpectedFeignException(e.getLocalizedMessage());
+            throw new UnexpectedFeignException("User not found ");
         }
     }
 

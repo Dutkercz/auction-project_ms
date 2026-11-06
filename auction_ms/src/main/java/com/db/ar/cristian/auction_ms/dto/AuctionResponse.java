@@ -11,6 +11,7 @@ public record AuctionResponse(
         String title,
         String description,
         BigDecimal minimumBid,
+        BigDecimal actualBid,
         Long sellerId,
 
         @JsonFormat(pattern = "dd/MM/yyyy'T'HH:mm:ss", shape = JsonFormat.Shape.STRING, timezone = "America/Sao_Paulo")

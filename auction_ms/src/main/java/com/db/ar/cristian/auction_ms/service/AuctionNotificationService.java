@@ -14,6 +14,11 @@ public class AuctionNotificationService {
 //    Não é preciso criar um Controller para o websocket,
 //    o spring disponibiliza esse componente para enviar as mensagens
     public void notifyBidUpdate(Long auctionId, BidUpdateDto bidUpdateDto){
-        messagingTemplate.convertAndSend("/topic/auctions/"+auctionId, bidUpdateDto);
+        // Faz o broadcast: todho mundo conectado nesse canal vai receber o JSON do lance na mesma hora
+        messagingTemplate.convertAndSend("/topic/auctions/" + auctionId, bidUpdateDto);
+    }
+
+    public void notifyAuctionCreated(BidUpdateDto bidUpdateDto){
+        messagingTemplate.convertAndSend("/topic/auctions", bidUpdateDto);
     }
 }

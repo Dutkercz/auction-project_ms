@@ -1,9 +1,11 @@
 package com.db.ar.cristian.auction_ms.service;
 
 import com.db.ar.cristian.auction_ms.dto.AuctionResponse;
+import com.db.ar.cristian.auction_ms.dto.BidUpdateDto;
 import com.db.ar.cristian.auction_ms.dto.CreateAuctionRequest;
 import com.db.ar.cristian.auction_ms.exception.AuctionUnexpectedException;
 import com.db.ar.cristian.auction_ms.mapper.AuctionMapper;
+import com.db.ar.cristian.auction_ms.messaging.event.AuctionEventListener;
 import com.db.ar.cristian.auction_ms.messaging.producer.AuctionProducer;
 import com.db.ar.cristian.auction_ms.model.Auction;
 import com.db.ar.cristian.auction_ms.model.AuctionStatus;
@@ -11,6 +13,7 @@ import com.db.ar.cristian.auction_ms.repository.AuctionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,7 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final AuctionMapper auctionMapper;
     private final AuctionProducer auctionProducer;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public AuctionResponse createAuction(CreateAuctionRequest request) throws JsonProcessingException {
@@ -43,6 +47,8 @@ public class AuctionService {
         auctionRepository.save(auction);
         //envia evento de novo auction aos consumidores
         auctionProducer.sendNewAuction(auctionMapper.toAuctionMessage(auction));
+        //envia evento interno ao listener
+        eventPublisher.publishEvent(new BidUpdateDto(auction.getId(), auction.getMinimumBid()));
         return auctionMapper.toResponse(auction);
     }
 

@@ -6,12 +6,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @FeignClient(url = "http://localhost:8081/api/v1/users", name = "auction.users")
 public interface FeignUserClient {
 
     @GetMapping("/{id}")
-    UserRepresentation getUser(@PathVariable Long id);
+    Optional<UserRepresentation> getUser(@PathVariable Long id);
 
 
     record UserRepresentation (
