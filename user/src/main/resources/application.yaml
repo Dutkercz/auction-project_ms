@@ -2,13 +2,13 @@ spring:
   application:
     name: user
   datasource:
-    url: jdbc:mysql://localhost:3306/auction_user?createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3307/auction_user?createDatabaseIfNotExist=true
     username: root
-    password: $CDB1234r
+    password: ${MYSQL_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
   kafka:
-    bootstrap-servers: "http://localhost:29092"
+    bootstrap-servers: "http://localhost:29092" 
 server:
   port: 8081

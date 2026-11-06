@@ -12,19 +12,17 @@ services:
     depends_on:
       - zookeeper_auction-project
     environment:
-      KAFKA_BROOKER_ID: 1
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper_auction-project:2181
       #     aqui para definir as portas a primeira é como outros se conecta atraves da rede do docker ->
       #                                                                     PLAINTEXT://[nome_do_serviço]:9092
       #     a segunda é como me conecto localmente ao kafka ->  PLAINTEXT_HOST://localhost:29092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka_auction-project:9092, PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_MAP: PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "29092:29092"
-
-
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     depends_on:
@@ -35,3 +33,21 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper_auction-project:2181
     ports:
       - "8090:8080"
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=TCP -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" -e 'SELECT 1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    volumes:
+      - mysql_data:/var/lib/mysql
+    
+volumes:
+  mysql_data:
