@@ -15,13 +15,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic"); //habiilitar o Broker para distribuir mensagens
-        registry.setApplicationDestinationPrefixes("/app"); //define destino de mensagens à aplicação
+        //habiilitar o Broker em memória para distribuir mensagens
+        // Clientes vão escutar canais que começam com "/topic" (ex: /topic/auction/123)
+        registry.enableSimpleBroker("/topic");
+        // Prefixo para mensagens que o cliente ENVIA ao servidor (não usarei, pois o lance vai via HTTP REST)
+        registry.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")//define o endereço de conexão websocket
+        // O endpoint onde o frontend vai tentar conectar o WebSocket inicialmente
+        registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("http://localhost:5173");
     }
 }
